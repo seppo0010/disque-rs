@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use redis::{Connection, RedisError, cmd, Value, ErrorKind, FromRedisValue,
-    IntoConnectionInfo, Iter};
+    IntoConnectionInfo, Iter, RedisResult};
 
 fn duration_to_millis(d: &Duration) -> u64 {
     (d.subsec_nanos() / 1_000_000) as u64 + d.as_secs()
@@ -24,13 +24,13 @@ pub struct Disque {
 }
 
 impl Disque {
-    pub fn open<T: IntoConnectionInfo>(params: T) -> Result<Disque, RedisError> {
+    pub fn open<T: IntoConnectionInfo>(params: T) -> RedisResult<Disque> {
         let client = try!(redis::Client::open(params));
         let connection = try!(client.get_connection());
         Ok(Disque { connection: connection })
     }
 
-    pub fn hello(&self) -> Result<Vec<Vec<u8>>, RedisError> {
+    pub fn hello(&self) -> RedisResult<Vec<Vec<u8>>> {
         cmd("HELLO").query(&self.connection)
     }
 
@@ -38,7 +38,7 @@ impl Disque {
             replicate: Option<usize>, delay: Option<Duration>,
             retry: Option<Duration>, ttl: Option<Duration>,
             maxlen: Option<usize>, async: bool,
-            ) -> Result<String, RedisError> {
+            ) -> RedisResult<String> {
         let mut c = cmd("ADDJOB");
         c
             .arg(queue_name)
@@ -55,7 +55,7 @@ impl Disque {
 
     pub fn getjob_count(&self, nohang: bool, timeout: Option<Duration>,
             count: usize, withcounters: bool, queues: &[&[u8]]
-            ) -> Result<Vec<Vec<Vec<u8>>>, RedisError> {
+            ) -> RedisResult<Vec<Vec<Vec<u8>>>> {
         let mut c = cmd("GETJOB");
         if nohang { c.arg("NOHANG"); }
         option_arg!(c, "TIMEOUT", timeout.map(|t| duration_to_millis(&t)));
@@ -68,67 +68,67 @@ impl Disque {
 
     pub fn getjob(&self, nohang: bool, timeout: Option<Duration>,
             withcounters: bool, queues: &[&[u8]]
-            ) -> Result<Option<Vec<Vec<u8>>>, RedisError> {
+            ) -> RedisResult<Option<Vec<Vec<u8>>>> {
         let mut jobs = try!(self.getjob_count(nohang, timeout, 1, withcounters,
                     queues));
         Ok(jobs.pop())
     }
 
-    pub fn ackjob(&self, jobids: &[&[u8]]) -> Result<bool, RedisError> {
+    pub fn ackjob(&self, jobids: &[&[u8]]) -> RedisResult<bool> {
         let mut c = cmd("ACKJOB");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
     }
 
-    pub fn fastack(&self, jobids: &[&[u8]]) -> Result<usize, RedisError> {
+    pub fn fastack(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
         let mut c = cmd("FASTACK");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
     }
 
-    pub fn working(&self, jobid: &[u8]) -> Result<Duration, RedisError> {
+    pub fn working(&self, jobid: &[u8]) -> RedisResult<Duration> {
         let retry = try!(cmd("WORKING").arg(jobid).query(&self.connection));
         Ok(Duration::from_secs(retry))
     }
 
-    pub fn nack(&self, jobids: &[&[u8]]) -> Result<usize, RedisError> {
+    pub fn nack(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
         let mut c = cmd("NACK");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
     }
 
-    pub fn info(&self) -> Result<Vec<u8>, RedisError> {
+    pub fn info(&self) -> RedisResult<Vec<u8>> {
         cmd("INFO").query(&self.connection)
     }
 
-    pub fn qlen(&self, queue_name: &[u8]) -> Result<usize, RedisError> {
+    pub fn qlen(&self, queue_name: &[u8]) -> RedisResult<usize> {
         cmd("QLEN").arg(queue_name).query(&self.connection)
     }
 
     pub fn qpeek(&self, queue_name: &[u8], count: i64
-            ) -> Result<Vec<Vec<Vec<u8>>>, RedisError> {
+            ) -> RedisResult<Vec<Vec<Vec<u8>>>> {
         cmd("QPEEK").arg(queue_name).arg(count).query(&self.connection)
     }
 
-    pub fn enqueue(&self, jobids: &[&[u8]]) -> Result<usize, RedisError> {
+    pub fn enqueue(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
         let mut c = cmd("ENQUEUE");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
     }
 
-    pub fn dequeue(&self, jobids: &[&[u8]]) -> Result<usize, RedisError> {
+    pub fn dequeue(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
         let mut c = cmd("DEQUEUE");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
     }
 
-    pub fn deljob(&self, jobids: &[&[u8]]) -> Result<usize, RedisError> {
+    pub fn deljob(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
         let mut c = cmd("DELJOB");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
     }
 
-    pub fn show(&self, jobid: &[u8]) -> Result<HashMap<String, Value>, RedisError> {
+    pub fn show(&self, jobid: &[u8]) -> RedisResult<HashMap<String, Value>> {
         let info:Value = try!(cmd("SHOW").arg(jobid).query(&self.connection));
         let mut h = HashMap::new();
         let mut items = match info {
@@ -150,7 +150,7 @@ impl Disque {
 
     pub fn qscan(&self, cursor: u64, count: u64, busyloop: bool,
             minlen: Option<u64>, maxlen: Option<u64>, importrate: Option<u64>
-            ) -> Result<Iter<Vec<u8>>, RedisError> {
+            ) -> RedisResult<Iter<Vec<u8>>> {
         let mut c = cmd("QSCAN");
         c.arg("COUNT").arg(count);
         if busyloop { c.arg("BUSYLOOP"); }
@@ -162,7 +162,7 @@ impl Disque {
 
     pub fn jscan_id(&self, cursor: u64, count: u64, blocking: bool,
             queue: Option<&[u8]>, states: &[&str]
-            ) -> Result<Iter<String>, RedisError> {
+            ) -> RedisResult<Iter<String>> {
         let mut c = cmd("JSCAN");
         c.arg("COUNT").arg(count);
         if blocking { c.arg("BLOCKING"); }
