@@ -294,11 +294,12 @@ impl Disque {
     }
 
     /// Returns full information about a job, like its current state and data.
-    pub fn show(&self, jobid: &[u8]) -> RedisResult<HashMap<String, Value>> {
+    pub fn show(&self, jobid: &[u8]) -> RedisResult<Option<HashMap<String, Value>>> {
         let info:Value = try!(cmd("SHOW").arg(jobid).query(&self.connection));
         let mut h = HashMap::new();
         let mut items = match info {
             Value::Bulk(items) => items,
+            Value::Nil => return Ok(None),
             _ => return Err(RedisError::from((ErrorKind::TypeError,
                             "Expected multi-bulk"))),
         };
@@ -311,7 +312,7 @@ impl Disque {
             let key:String = try!(String::from_redis_value(&items.pop().unwrap()));
             h.insert(key, value);
         }
-        Ok(h)
+        Ok(Some(h))
     }
 
     /// Iterator to run all queues that fulfil a criteria.
@@ -556,7 +557,7 @@ fn deljob() {
 fn show() {
     let disque = conn();
     let jobid = disque.addjob(b"queue15", b"job15", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
-    let info = disque.show(jobid.as_bytes()).unwrap();
+    let info = disque.show(jobid.as_bytes()).unwrap().unwrap();
     assert_eq!(info.get("id").unwrap(), &Value::Data(jobid.as_bytes().to_vec()));
     assert_eq!(info.get("queue").unwrap(), &Value::Data(b"queue15".to_vec()));
     assert_eq!(info.get("state").unwrap(), &Value::Data(b"queued".to_vec()));
