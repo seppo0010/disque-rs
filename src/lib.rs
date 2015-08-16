@@ -105,6 +105,12 @@ impl Disque {
     pub fn qpeek(&self, queue_name: &[u8], count: i64) -> Result<Vec<Vec<Vec<u8>>>, RedisError> {
         cmd("QPEEK").arg(queue_name).arg(count).query(&self.connection)
     }
+
+    pub fn enqueue(&self, jobids: &[&[u8]]) -> Result<usize, RedisError> {
+        let mut c = cmd("ENQUEUE");
+        for jobid in jobids { c.arg(*jobid); }
+        c.query(&self.connection)
+    }
 }
 
 #[cfg(test)]
@@ -240,4 +246,15 @@ fn qpeek() {
                 ],
             ]);
     assert_eq!(disque.getjob_count(false, None, 100, true, &[b"queue11"]).unwrap().len(), 2);
+}
+
+#[test]
+fn enqueue() {
+    let disque = conn();
+    let j1 = disque.addjob(b"queue12", b"job12.1", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    let j2 = disque.addjob(b"queue12", b"job12.2", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    let j3 = disque.addjob(b"queue12", b"job12.3", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    assert_eq!(disque.getjob_count(false, None, 100, true, &[b"queue12"]).unwrap().len(), 3);
+    assert_eq!(disque.enqueue(&[j1.as_bytes(), j2.as_bytes(), j3.as_bytes()]).unwrap(), 3);
+    assert_eq!(disque.getjob_count(false, None, 100, true, &[b"queue12"]).unwrap().len(), 3);
 }
