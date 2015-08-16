@@ -87,6 +87,12 @@ impl Disque {
         let retry = try!(cmd("WORKING").arg(jobid).query(&self.connection));
         Ok(Duration::from_secs(retry))
     }
+
+    pub fn nack(&self, jobids: &[&[u8]]) -> Result<usize, RedisError> {
+        let mut c = cmd("NACK");
+        for jobid in jobids { c.arg(*jobid); }
+        c.query(&self.connection)
+    }
 }
 
 #[cfg(test)]
@@ -163,4 +169,15 @@ fn working() {
     let disque = conn();
     let jobid = disque.addjob(b"queue8", b"job8", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
     assert!(disque.working(jobid.as_bytes()).unwrap().as_secs() > 0);
+}
+
+#[test]
+fn nack() {
+    let disque = conn();
+    let j1 = disque.addjob(b"queue9", b"job9.1", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    let j2 = disque.addjob(b"queue9", b"job9.2", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    let j3 = disque.addjob(b"queue9", b"job9.3", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    assert_eq!(disque.getjob_count(false, None, 100, true, &[b"queue9"]).unwrap().len(), 3);
+    assert_eq!(disque.nack(&[j1.as_bytes(), j2.as_bytes(), j3.as_bytes()]).unwrap(), 3);
+    assert_eq!(disque.getjob_count(false, None, 100, true, &[b"queue9"]).unwrap().len(), 3);
 }
