@@ -1,6 +1,5 @@
 language: rust
 sudo: false
-
 cache:
   directories:
     - disque
@@ -9,7 +8,9 @@ before_install:
   - test -d disque/.git || git clone -n https://github.com/antirez/disque.git
   - cd disque && git fetch origin && git checkout -f master && make && cd ..
 
-before_script: ./disque/src/disque-server --daemonize yes
+before_script:
+  - ./disque/src/disque-server --daemonize yes
+  - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/.local/bin:$PATH
 
 script:
   - cargo test
@@ -22,3 +23,10 @@ rust:
 
 notifications:
   email: false
+
+after_success:
+  - travis-cargo --only nightly doc-upload
+
+env:
+  global:
+    - secure: I45FBsdTBinEuAOUlepdcc3n9A4P9dLpbabr9HmoZG0C5ybqqeow5PEW6ZnQuUpCl6481hawm+ckXYEi8BSXWoQUHKr02xwbLt4BiixbRKBth9H7OLyZDo96/AY7geMc4tyl0/4vvQLyIWjvqKtClHvwZLfhmGrVO1r2GLCvCk5bwmYRKUamK2CIJ9fbFD8Ht9mcMPMcMZwReiaYBvrCPHJ5o6jn58LdXmKSy5LqbAvxLnw6RQK0B72LJaklg9Oi2bd5fYk3KYLOq1OGWABLCkIbqn86QNvV0KFR/rRz7h6akK4x9DnjRlmfh+q71g+q/jYdnMt5gk7Hnal2R4q6ifGd5Fv+/bb4G3QnWtdq6SFUvPIWC95zAV5n9IvfD5B7FdMsG613EaB88jfP8MKgz+rSjOG+QfC5PFE6epwboPjxDFbXuNR2RW34GLWfDpKd1Ai1I6u4FI2xSXsDSdBhxdD3xTeIpiA6vOuTXOWk4S/xXpTs6ZapTC++GLsGVtdtCiwg0LobkwdHn7RCQ6DYtT7t4M+ulqzS+g5fTHzfHXdl8keWIKXBkwQ7P7o+qHfEZUq3stkbn4gblT6OjPzyP/HnOwFPFkmu8fsFrfRtmPavl4UHGspoILciEIJ7HEFQhh9Ui6+K+FQgq4/7YpXra65rFEsESDj+StaXdMW99E4=
