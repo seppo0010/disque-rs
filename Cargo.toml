@@ -2,6 +2,12 @@
 name = "disque"
 version = "0.1.0"
 authors = ["Sebastian Waisbrot <seppo0010@gmail.com>"]
+description = "A client library for Disque message broker"
+documentation = "http://seppo0010.github.io/disque-rs/"
+repository = "https://github.com/seppo0010/disque-rs"
+readme = "README.md"
+keywords = [ "disque", "message", "broker", "scheduling", "distributed" ]
+license-file = "LICENSE"
 
 [dependencies]
 redis = "0.5.0"
