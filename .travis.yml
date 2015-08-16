@@ -12,7 +12,7 @@ before_install:
 before_script: ./disque/src/disque-server --daemonize yes
 
 rust:
-  - stable
+# - stable
   - beta
   - nightly
 
