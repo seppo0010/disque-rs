@@ -11,6 +11,10 @@ before_install:
 
 before_script: ./disque/src/disque-server --daemonize yes
 
+script:
+  - cargo test
+  - rustdoc --test README.md -L target/debug -L target/debug/deps
+
 rust:
 # - stable
   - beta
