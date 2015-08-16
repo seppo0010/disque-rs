@@ -1,0 +1,20 @@
+language: rust
+sudo: false
+
+cache:
+  directories:
+    - disque
+
+before_install:
+  - test -d disque/.git || git clone -n https://github.com/antirez/disque.git
+  - cd disque && git fetch origin && git checkout -f master && make && cd ..
+
+before_script: ./disque/src/disque-server --daemonize yes
+
+rust:
+  - stable
+  - beta
+  - nightly
+
+notifications:
+  email: false
