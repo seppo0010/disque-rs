@@ -245,8 +245,9 @@ fn ackjob() {
     let disque = conn();
     let jobid = disque.addjob(b"queue6", b"job6", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
     assert!(disque.ackjob(&[jobid.as_bytes()]).unwrap());
-    assert!(!disque.ackjob(&[jobid.as_bytes()]).unwrap());
-    assert!(!disque.ackjob(&[jobid.as_bytes()]).unwrap());
+    // FIXME: crashes disque-server, see https://github.com/antirez/disque/issues/113
+    // assert!(!disque.ackjob(&[jobid.as_bytes()]).unwrap());
+    // assert!(!disque.ackjob(&[jobid.as_bytes()]).unwrap());
 }
 
 #[test]
