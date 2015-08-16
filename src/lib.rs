@@ -146,6 +146,26 @@ impl Disque {
         }
         Ok(h)
     }
+
+    pub fn qscan(&self, cursor: u64, count: u64, busyloop: bool,
+            minlen: Option<u64>, maxlen: Option<u64>, importrate: Option<u64>
+            ) -> Result<(u64, Vec<Vec<u8>>), RedisError> {
+        let mut c = cmd("QSCAN");
+        c.arg(cursor);
+        c.arg("COUNT").arg(count);
+        if busyloop { c.arg("BUSYLOOP"); }
+        option_arg!(c, "MINLEN", minlen);
+        option_arg!(c, "MAXLEN", maxlen);
+        option_arg!(c, "IMPORTRATE", importrate);
+        let mut items = match try!(c.query(&self.connection)) {
+            Value::Bulk(items) => items,
+            _ => return Err(RedisError::from((ErrorKind::TypeError,
+                            "Expected multi-bulk"))),
+        };
+        let queues = try!(Vec::from_redis_value(&items.pop().unwrap()));
+        let newcursor = try!(u64::from_redis_value(&items.pop().unwrap()));
+        Ok((newcursor, queues))
+    }
 }
 
 #[cfg(test)]
@@ -322,4 +342,12 @@ fn show() {
     assert_eq!(info.get("id").unwrap(), &Value::Data(jobid.as_bytes().to_vec()));
     assert_eq!(info.get("queue").unwrap(), &Value::Data(b"queue15".to_vec()));
     assert_eq!(info.get("state").unwrap(), &Value::Data(b"queued".to_vec()));
+}
+
+#[test]
+fn qscan() {
+    let disque = conn();
+    disque.addjob(b"queue16", b"job16", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    let queues = disque.qscan(0, 1000, false, None, None, None).unwrap().1;
+    assert!(queues.contains(&b"queue16".to_vec()));
 }
