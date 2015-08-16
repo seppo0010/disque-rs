@@ -77,7 +77,7 @@ impl Disque {
         c.query(&self.connection)
     }
 
-    pub fn fastack(&self, jobids: &[&[u8]]) -> Result<bool, RedisError> {
+    pub fn fastack(&self, jobids: &[&[u8]]) -> Result<usize, RedisError> {
         let mut c = cmd("FASTACK");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
@@ -153,9 +153,9 @@ fn ackjob() {
 fn fastack() {
     let disque = conn();
     let jobid = disque.addjob(b"queue7", b"job7", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
-    assert!(disque.fastack(&[jobid.as_bytes()]).unwrap());
-    assert!(!disque.fastack(&[jobid.as_bytes()]).unwrap());
-    assert!(!disque.fastack(&[jobid.as_bytes()]).unwrap());
+    assert!(disque.fastack(&[jobid.as_bytes()]).unwrap() == 1);
+    assert!(disque.fastack(&[jobid.as_bytes()]).unwrap() == 0);
+    assert!(disque.fastack(&[jobid.as_bytes()]).unwrap() == 0);
 }
 
 #[test]
