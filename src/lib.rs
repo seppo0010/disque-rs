@@ -1,8 +1,9 @@
 extern crate redis;
 
+use std::collections::HashMap;
 use std::time::Duration;
 
-use redis::{Connection, RedisError, cmd};
+use redis::{Connection, RedisError, cmd, Value, ErrorKind, FromRedisValue};
 
 fn duration_to_millis(d: &Duration) -> u64 {
     (d.subsec_nanos() / 1_000_000) as u64 + d.as_secs()
@@ -16,6 +17,7 @@ macro_rules! option_arg {
         };
     )
 }
+
 pub struct Disque {
     connection: Connection,
 }
@@ -102,7 +104,8 @@ impl Disque {
         cmd("QLEN").arg(queue_name).query(&self.connection)
     }
 
-    pub fn qpeek(&self, queue_name: &[u8], count: i64) -> Result<Vec<Vec<Vec<u8>>>, RedisError> {
+    pub fn qpeek(&self, queue_name: &[u8], count: i64
+            ) -> Result<Vec<Vec<Vec<u8>>>, RedisError> {
         cmd("QPEEK").arg(queue_name).arg(count).query(&self.connection)
     }
 
@@ -122,6 +125,26 @@ impl Disque {
         let mut c = cmd("DELJOB");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
+    }
+
+    pub fn show(&self, jobid: &[u8]) -> Result<HashMap<String, Value>, RedisError> {
+        let info:Value = try!(cmd("SHOW").arg(jobid).query(&self.connection));
+        let mut h = HashMap::new();
+        let mut items = match info {
+            Value::Bulk(items) => items,
+            _ => return Err(RedisError::from((ErrorKind::TypeError,
+                            "Expected multi-bulk"))),
+        };
+        if items.len() % 2 != 0 {
+            return Err(RedisError::from((ErrorKind::TypeError,
+                            "Expected an even number of elements")));
+        }
+        while items.len() > 0 {
+            let value = items.pop().unwrap();
+            let key:String = try!(String::from_redis_value(&items.pop().unwrap()));
+            h.insert(key, value);
+        }
+        Ok(h)
     }
 }
 
@@ -289,4 +312,14 @@ fn deljob() {
     disque.addjob(b"queue14", b"job14.3", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
     assert_eq!(disque.deljob(&[j1.as_bytes(), j2.as_bytes()]).unwrap(), 2);
     assert_eq!(disque.getjob_count(true, None, 100, true, &[b"queue14"]).unwrap().len(), 1);
+}
+
+#[test]
+fn show() {
+    let disque = conn();
+    let jobid = disque.addjob(b"queue15", b"job15", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    let info = disque.show(jobid.as_bytes()).unwrap();
+    assert_eq!(info.get("id").unwrap(), &Value::Data(jobid.as_bytes().to_vec()));
+    assert_eq!(info.get("queue").unwrap(), &Value::Data(b"queue15".to_vec()));
+    assert_eq!(info.get("state").unwrap(), &Value::Data(b"queued".to_vec()));
 }
