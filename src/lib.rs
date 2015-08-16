@@ -122,17 +122,18 @@ fn getjob_count() {
 #[test]
 fn getjob() {
     let disque = conn();
-    let j1 = disque.addjob(b"queue4", b"job4", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    let jobid = disque.addjob(b"queue4", b"job4", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
     let job = disque.getjob(false, None, true, &[b"queue4", b"queue5"]).unwrap().unwrap();
     assert_eq!(job[0], b"queue4");
-    assert_eq!(job[1], j1.into_bytes());
+    assert_eq!(job[1], jobid.into_bytes());
     assert_eq!(job[2], b"job4");
 }
 
 #[test]
 fn ackjob() {
     let disque = conn();
-    let j1 = disque.addjob(b"queue6", b"job6", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
-    assert!(disque.ackjob(&[j1.as_bytes()]).unwrap());
-    assert!(!disque.ackjob(&[j1.as_bytes()]).unwrap());
+    let jobid = disque.addjob(b"queue6", b"job6", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    assert!(disque.ackjob(&[jobid.as_bytes()]).unwrap());
+    assert!(!disque.ackjob(&[jobid.as_bytes()]).unwrap());
+    assert!(!disque.ackjob(&[jobid.as_bytes()]).unwrap());
 }
