@@ -59,8 +59,20 @@ impl Disque {
         Ok(Disque { connection: connection })
     }
 
-    pub fn hello(&self) -> RedisResult<Vec<Vec<u8>>> {
-        cmd("HELLO").query(&self.connection)
+    pub fn hello(&self) -> RedisResult<(u8, String, Vec<(String, String, u16, u32)>)> {
+        let mut items = match try!(cmd("HELLO").query(&self.connection)) {
+            Value::Bulk(items) => items,
+            _ => return Err(RedisError::from((ErrorKind::TypeError,
+                            "Expected multi-bulk"))),
+        };
+        if items.len() != 3 {
+            return Err(RedisError::from((ErrorKind::TypeError,
+                            "Expected multi-bulk with size 3")));
+        }
+        let nodes = try!(Vec::from_redis_value(&items.pop().unwrap()));
+        let nodeid = try!(String::from_redis_value(&items.pop().unwrap()));
+        let hellov = try!(u8::from_redis_value(&items.pop().unwrap()));
+        Ok((hellov, nodeid, nodes))
     }
 
     pub fn addjob(&self, queue_name: &[u8], job: &[u8], timeout: Duration,
@@ -216,7 +228,9 @@ fn can_connect() {
 #[test]
 fn hello() {
     let disque = conn();
-    disque.hello().unwrap();
+    let (v, nodeid, nodes) = disque.hello().unwrap();
+    assert_eq!(v, 1);
+    assert!(nodes.into_iter().map(|n| n.0).collect::<Vec<_>>().contains(&nodeid));
 }
 
 #[test]
