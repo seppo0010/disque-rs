@@ -93,6 +93,10 @@ impl Disque {
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
     }
+
+    pub fn info(&self) -> Result<Vec<u8>, RedisError> {
+        cmd("INFO").query(&self.connection)
+    }
 }
 
 #[cfg(test)]
@@ -180,4 +184,10 @@ fn nack() {
     assert_eq!(disque.getjob_count(false, None, 100, true, &[b"queue9"]).unwrap().len(), 3);
     assert_eq!(disque.nack(&[j1.as_bytes(), j2.as_bytes(), j3.as_bytes()]).unwrap(), 3);
     assert_eq!(disque.getjob_count(false, None, 100, true, &[b"queue9"]).unwrap().len(), 3);
+}
+
+#[test]
+fn info() {
+    let disque = conn();
+    disque.info().unwrap();
 }
