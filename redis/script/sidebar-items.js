@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["Script","Represents a lua script."],["ScriptInvocation","Represents a prepared script call."]]});
