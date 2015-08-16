@@ -27,7 +27,7 @@ fn main() {
     let jobid = disque.addjob(b"my queue", b"my job",
             Duration::from_secs(10), None, None, None, None, None, false
             ).unwrap();
-    let jobs = disque.getjob_count(true, None, 10, false, &[b"my queue"]).unwrap();
+    let jobs = disque.getjob_count(true, None, 10, &[b"my queue"]).unwrap();
 }
 ```
 
