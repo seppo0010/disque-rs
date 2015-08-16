@@ -3,7 +3,8 @@ extern crate redis;
 use std::collections::HashMap;
 use std::time::Duration;
 
-use redis::{Connection, RedisError, cmd, Value, ErrorKind, FromRedisValue};
+use redis::{Connection, RedisError, cmd, Value, ErrorKind, FromRedisValue,
+    IntoConnectionInfo, Iter};
 
 fn duration_to_millis(d: &Duration) -> u64 {
     (d.subsec_nanos() / 1_000_000) as u64 + d.as_secs()
@@ -23,8 +24,8 @@ pub struct Disque {
 }
 
 impl Disque {
-    pub fn open(url: &str) -> Result<Disque, RedisError> {
-        let client = try!(redis::Client::open(url));
+    pub fn open<T: IntoConnectionInfo>(params: T) -> Result<Disque, RedisError> {
+        let client = try!(redis::Client::open(params));
         let connection = try!(client.get_connection());
         Ok(Disque { connection: connection })
     }
@@ -149,43 +150,27 @@ impl Disque {
 
     pub fn qscan(&self, cursor: u64, count: u64, busyloop: bool,
             minlen: Option<u64>, maxlen: Option<u64>, importrate: Option<u64>
-            ) -> Result<(u64, Vec<Vec<u8>>), RedisError> {
+            ) -> Result<Iter<Vec<u8>>, RedisError> {
         let mut c = cmd("QSCAN");
-        c.arg(cursor);
         c.arg("COUNT").arg(count);
         if busyloop { c.arg("BUSYLOOP"); }
         option_arg!(c, "MINLEN", minlen);
         option_arg!(c, "MAXLEN", maxlen);
         option_arg!(c, "IMPORTRATE", importrate);
-        let mut items = match try!(c.query(&self.connection)) {
-            Value::Bulk(items) => items,
-            _ => return Err(RedisError::from((ErrorKind::TypeError,
-                            "Expected multi-bulk"))),
-        };
-        let queues = try!(Vec::from_redis_value(&items.pop().unwrap()));
-        let newcursor = try!(u64::from_redis_value(&items.pop().unwrap()));
-        Ok((newcursor, queues))
+        c.cursor_arg(cursor).iter(&self.connection)
     }
 
     pub fn jscan_id(&self, cursor: u64, count: u64, blocking: bool,
             queue: Option<&[u8]>, states: &[&str]
-            ) -> Result<(u64, Vec<String>), RedisError> {
+            ) -> Result<Iter<String>, RedisError> {
         let mut c = cmd("JSCAN");
-        c.arg(cursor);
         c.arg("COUNT").arg(count);
         if blocking { c.arg("BLOCKING"); }
         option_arg!(c, "QUEUE", queue);
         for state in states {
             c.arg("STATE").arg(*state);
         }
-        let mut items = match try!(c.query(&self.connection)) {
-            Value::Bulk(items) => items,
-            _ => return Err(RedisError::from((ErrorKind::TypeError,
-                            "Expected multi-bulk"))),
-        };
-        let ids = try!(Vec::from_redis_value(&items.pop().unwrap()));
-        let newcursor = try!(u64::from_redis_value(&items.pop().unwrap()));
-        Ok((newcursor, ids))
+        c.cursor_arg(cursor).iter(&self.connection)
     }
 }
 
@@ -370,7 +355,7 @@ fn show() {
 fn qscan() {
     let disque = conn();
     disque.addjob(b"queue16", b"job16", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
-    let queues = disque.qscan(0, 1000, false, None, None, None).unwrap().1;
+    let queues = disque.qscan(0, 1000, false, None, None, None).unwrap().collect::<Vec<_>>();
     assert!(queues.contains(&b"queue16".to_vec()));
 }
 
@@ -378,7 +363,7 @@ fn qscan() {
 fn jscan_id() {
     let disque = conn();
     let job = disque.addjob(b"queue17", b"job17", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
-    assert!(disque.jscan_id(0, 1000, false, None, &[]).unwrap().1.contains(&job));
-    assert!(!disque.jscan_id(0, 1000, false, Some(b"queue16"), &[]).unwrap().1.contains(&job));
-    assert!(disque.jscan_id(0, 1000, false, Some(b"queue17"), &[]).unwrap().1.contains(&job));
+    assert!(disque.jscan_id(0, 1000, false, None, &[]).unwrap().collect::<Vec<_>>().contains(&job));
+    assert!(!disque.jscan_id(0, 1000, false, Some(b"queue16"), &[]).unwrap().collect::<Vec<_>>().contains(&job));
+    assert!(disque.jscan_id(0, 1000, false, Some(b"queue17"), &[]).unwrap().collect::<Vec<_>>().contains(&job));
 }
