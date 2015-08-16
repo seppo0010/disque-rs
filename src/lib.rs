@@ -32,6 +32,9 @@
 //! The commands are a direct implementation of Disque commands. To read a
 //! reference about their meaning, go to https://github.com/antirez/disque
 
+#![crate_name = "disque"]
+#![crate_type = "lib"]
+
 extern crate redis;
 
 use std::collections::HashMap;
