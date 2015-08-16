@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Disque` struct in crate `disque`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Disque">
+
+    <title>disque::Disque - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <section class="sidebar">
+        
+        <p class='location'><a href='index.html'>disque</a></p><script>window.sidebarCurrent = {name: 'Disque', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </section>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='index.html'>disque</a>::<wbr><a class='struct' href=''>Disque</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-36' class='srclink' href='../src/disque/lib.rs.html#56-58' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Disque {
+    // some fields omitted
+}</pre><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../disque/struct.Disque.html' title='disque::Disque'>Disque</a></code></h3><div class='impl-items'><h4 id='method.open' class='method'><code>fn <a href='#method.open' class='fnname'>open</a>&lt;T: <a class='trait' href='../redis/connection/trait.IntoConnectionInfo.html' title='redis::connection::IntoConnectionInfo'>IntoConnectionInfo</a>&gt;(params: T) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a class='struct' href='../disque/struct.Disque.html' title='disque::Disque'>Disque</a>&gt;</code></h4>
+<div class='docblock'><p>Opens a new connection to a Disque server.</p>
+
+<h1 id="examples" class='section-header'><a
+                           href="#examples">Examples</a></h1><pre class='rust rust-example-rendered'>
+<span class='kw'>let</span> <span class='ident'>disque</span> <span class='op'>=</span> <span class='ident'>Disque</span>::<span class='ident'>open</span>(<span class='string'>&quot;redis://127.0.0.1:7711/&quot;</span>).<span class='ident'>unwrap</span>();</pre>
+</div><h4 id='method.hello' class='method'><code>fn <a href='#method.hello' class='fnname'>hello</a>(&amp;self) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>, <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>, <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>, <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>, <a href='https://doc.rust-lang.org/nightly/std/primitive.u16.html'>u16</a>, <a href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>)</a>&gt;)</a>&gt;</code></h4>
+<div class='docblock'><p>The hello command returns information about the disque cluster.</p>
+
+<h1 id="examples" class='section-header'><a
+                           href="#examples">Examples</a></h1><pre class='rust rust-example-rendered'>
+<span class='kw'>let</span> <span class='ident'>disque</span> <span class='op'>=</span> <span class='ident'>Disque</span>::<span class='ident'>open</span>(<span class='string'>&quot;redis://127.0.0.1:7711/&quot;</span>).<span class='ident'>unwrap</span>();
+<span class='kw'>let</span> (_, <span class='ident'>nodeid</span>, _) <span class='op'>=</span> <span class='ident'>disque</span>.<span class='ident'>hello</span>().<span class='ident'>unwrap</span>();
+<span class='macro'>println</span><span class='macro'>!</span>(<span class='string'>&quot;Connected to node {}&quot;</span>, <span class='ident'>nodeid</span>);</pre>
+</div><h4 id='method.addjob' class='method'><code>fn <a href='#method.addjob' class='fnname'>addjob</a>(&amp;self, queue_name: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, job: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, timeout: <a class='struct' href='https://doc.rust-lang.org/nightly/std/time/duration/struct.Duration.html' title='std::time::duration::Duration'>Duration</a>, replicate: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;, delay: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/std/time/duration/struct.Duration.html' title='std::time::duration::Duration'>Duration</a>&gt;, retry: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/std/time/duration/struct.Duration.html' title='std::time::duration::Duration'>Duration</a>&gt;, ttl: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/std/time/duration/struct.Duration.html' title='std::time::duration::Duration'>Duration</a>&gt;, maxlen: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;, async: <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a>) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;</code></h4>
+<div class='docblock'><p>Adds a job to a queue.</p>
+
+<h1 id="examples" class='section-header'><a
+                           href="#examples">Examples</a></h1><pre class='rust rust-example-rendered'>
+<span class='kw'>let</span> <span class='ident'>disque</span> <span class='op'>=</span> <span class='ident'>Disque</span>::<span class='ident'>open</span>(<span class='string'>&quot;redis://127.0.0.1:7711/&quot;</span>).<span class='ident'>unwrap</span>();
+<span class='kw'>let</span> <span class='ident'>jobid</span> <span class='op'>=</span> <span class='ident'>disque</span>.<span class='ident'>addjob</span>(<span class='string'>b&quot;my queue&quot;</span>, <span class='string'>b&quot;my job&quot;</span>,
+  <span class='ident'>Duration</span>::<span class='ident'>from_secs</span>(<span class='number'>10</span>), <span class='prelude-val'>None</span>, <span class='prelude-val'>None</span>, <span class='prelude-val'>None</span>, <span class='prelude-val'>None</span>, <span class='prelude-val'>None</span>, <span class='boolval'>false</span>
+  ).<span class='ident'>unwrap</span>();
+<span class='macro'>println</span><span class='macro'>!</span>(<span class='string'>&quot;My job id is {}&quot;</span>, <span class='ident'>jobid</span>);</pre>
+</div><h4 id='method.getjob_count' class='method'><code>fn <a href='#method.getjob_count' class='fnname'>getjob_count</a>(&amp;self, nohang: <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a>, timeout: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/std/time/duration/struct.Duration.html' title='std::time::duration::Duration'>Duration</a>&gt;, count: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, withcounters: <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a>, queues: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>&gt;&gt;&gt;&gt;</code></h4>
+<div class='docblock'><p>Gets up to <code>count</code> jobs from certain <code>queues</code>.</p>
+
+<h1 id="examples" class='section-header'><a
+                           href="#examples">Examples</a></h1><pre class='rust rust-example-rendered'>
+<span class='kw'>let</span> <span class='ident'>disque</span> <span class='op'>=</span> <span class='ident'>Disque</span>::<span class='ident'>open</span>(<span class='string'>&quot;redis://127.0.0.1:7711/&quot;</span>).<span class='ident'>unwrap</span>();
+<span class='kw'>let</span> <span class='ident'>queue</span> <span class='op'>=</span> <span class='string'>b&quot;my getjob_count queue&quot;</span>;
+<span class='ident'>disque</span>.<span class='ident'>addjob</span>(<span class='ident'>queue</span>, <span class='string'>b&quot;my job 1&quot;</span>, <span class='ident'>Duration</span>::<span class='ident'>from_secs</span>(<span class='number'>10</span>),
+  <span class='prelude-val'>None</span>, <span class='prelude-val'>None</span>, <span class='prelude-val'>None</span>, <span class='prelude-val'>None</span>, <span class='prelude-val'>None</span>, <span class='boolval'>false</span>
+  ).<span class='ident'>unwrap</span>();
+<span class='ident'>disque</span>.<span class='ident'>addjob</span>(<span class='ident'>queue</span>, <span class='string'>b&quot;my job 2&quot;</span>, <span class='ident'>Duration</span>::<span class='ident'>from_secs</span>(<span class='number'>10</span>),
+  <span class='prelude-val'>None</span>, <span class='prelude-val'>None</span>, <span class='prelude-val'>None</span>, <span class='prelude-val'>None</span>, <span class='prelude-val'>None</span>, <span class='boolval'>false</span>
+  ).<span class='ident'>unwrap</span>();
+
+<span class='kw'>let</span> <span class='ident'>jobs</span> <span class='op'>=</span> <span class='ident'>disque</span>.<span class='ident'>getjob_count</span>(<span class='boolval'>true</span>, <span class='prelude-val'>None</span>, <span class='number'>10</span>, <span class='boolval'>false</span>, <span class='kw-2'>&amp;</span>[<span class='ident'>queue</span>]).<span class='ident'>unwrap</span>();
+<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>jobs</span>.<span class='ident'>len</span>(), <span class='number'>2</span>);
+<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>jobs</span>[<span class='number'>0</span>][<span class='number'>2</span>], <span class='string'>b&quot;my job 1&quot;</span>);
+<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>jobs</span>[<span class='number'>1</span>][<span class='number'>2</span>], <span class='string'>b&quot;my job 2&quot;</span>);</pre>
+</div><h4 id='method.getjob' class='method'><code>fn <a href='#method.getjob' class='fnname'>getjob</a>(&amp;self, nohang: <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a>, timeout: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/std/time/duration/struct.Duration.html' title='std::time::duration::Duration'>Duration</a>&gt;, withcounters: <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a>, queues: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>&gt;&gt;&gt;&gt;</code></h4>
+<div class='docblock'><p>Gets a single job from any of the specified <code>queues</code>.</p>
+</div><h4 id='method.ackjob' class='method'><code>fn <a href='#method.ackjob' class='fnname'>ackjob</a>(&amp;self, jobids: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a>&gt;</code></h4>
+<div class='docblock'><p>Acknowledge jobs.</p>
+</div><h4 id='method.fastack' class='method'><code>fn <a href='#method.fastack' class='fnname'>fastack</a>(&amp;self, jobids: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</code></h4>
+<div class='docblock'><p>Fast acknowledge jobs.</p>
+</div><h4 id='method.working' class='method'><code>fn <a href='#method.working' class='fnname'>working</a>(&amp;self, jobid: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/std/time/duration/struct.Duration.html' title='std::time::duration::Duration'>Duration</a>&gt;</code></h4>
+<div class='docblock'><p>Tell Disque that a job is still processed.</p>
+</div><h4 id='method.nack' class='method'><code>fn <a href='#method.nack' class='fnname'>nack</a>(&amp;self, jobids: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</code></h4>
+<div class='docblock'><p>Tells Disque to put back the job in the queue ASAP. Should be used when
+the worker was not able to process a message and wants the message to
+be put back into the queue in order to be processed again.</p>
+</div><h4 id='method.info' class='method'><code>fn <a href='#method.info' class='fnname'>info</a>(&amp;self) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a class='struct' href='../redis/types/struct.InfoDict.html' title='redis::types::InfoDict'>InfoDict</a>&gt;</code></h4>
+<div class='docblock'><p>Information about the server</p>
+</div><h4 id='method.qlen' class='method'><code>fn <a href='#method.qlen' class='fnname'>qlen</a>(&amp;self, queue_name: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</code></h4>
+<div class='docblock'><p>Size of the queue</p>
+</div><h4 id='method.qpeek' class='method'><code>fn <a href='#method.qpeek' class='fnname'>qpeek</a>(&amp;self, queue_name: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, count: <a href='https://doc.rust-lang.org/nightly/std/primitive.i64.html'>i64</a>) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>&gt;&gt;&gt;&gt;</code></h4>
+<div class='docblock'><p>Gets jobs from <code>queue_name</code> up to the absolute number of <code>count</code>.
+If count is negative, it will be from newest to oldest.</p>
+</div><h4 id='method.enqueue' class='method'><code>fn <a href='#method.enqueue' class='fnname'>enqueue</a>(&amp;self, jobids: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</code></h4>
+<div class='docblock'><p>Queue jobs</p>
+</div><h4 id='method.dequeue' class='method'><code>fn <a href='#method.dequeue' class='fnname'>dequeue</a>(&amp;self, jobids: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</code></h4>
+<div class='docblock'><p>Remove jobs from queue</p>
+</div><h4 id='method.deljob' class='method'><code>fn <a href='#method.deljob' class='fnname'>deljob</a>(&amp;self, jobids: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</code></h4>
+<div class='docblock'><p>Completely delete a job from a single node.</p>
+</div><h4 id='method.show' class='method'><code>fn <a href='#method.show' class='fnname'>show</a>(&amp;self, jobid: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html' title='std::collections::hash::map::HashMap'>HashMap</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>, <a class='enum' href='../redis/types/enum.Value.html' title='redis::types::Value'>Value</a>&gt;&gt;</code></h4>
+<div class='docblock'><p>Returns full information about a job, like its current state and data.</p>
+</div><h4 id='method.qscan' class='method'><code>fn <a href='#method.qscan' class='fnname'>qscan</a>(&amp;self, cursor: <a href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>, count: <a href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>, busyloop: <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a>, minlen: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;, maxlen: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;, importrate: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a class='struct' href='../redis/cmd/struct.Iter.html' title='redis::cmd::Iter'>Iter</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>&gt;&gt;&gt;</code></h4>
+<div class='docblock'><p>Iterator to run all queues that fulfil a criteria.
+The iterator will batch into segments of approximate <code>count</code> size.</p>
+</div><h4 id='method.jscan_id' class='method'><code>fn <a href='#method.jscan_id' class='fnname'>jscan_id</a>(&amp;self, cursor: <a href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>, count: <a href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>, blocking: <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a>, queue: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>&gt;, states: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a>&amp;<a href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='type' href='../redis/types/type.RedisResult.html' title='redis::types::RedisResult'>RedisResult</a>&lt;<a class='struct' href='../redis/cmd/struct.Iter.html' title='redis::cmd::Iter'>Iter</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;&gt;</code></h4>
+<div class='docblock'><p>Iterator to run all jobs that fulfil a criteria.
+The iterator will batch into segments of approximate <code>count</code> size.</p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <div id="help" class="hidden">
+        <div>
+            <div class="shortcuts">
+                <h1>Keyboard Shortcuts</h1>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h1>Search Tricks</h1>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "disque";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    
+    <script async src="../search-index.js"></script>
+</body>
+</html>
