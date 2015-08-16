@@ -97,6 +97,10 @@ impl Disque {
     pub fn info(&self) -> Result<Vec<u8>, RedisError> {
         cmd("INFO").query(&self.connection)
     }
+
+    pub fn qlen(&self, queue_name: &[u8]) -> Result<usize, RedisError> {
+        cmd("QLEN").arg(queue_name).query(&self.connection)
+    }
 }
 
 #[cfg(test)]
@@ -190,4 +194,14 @@ fn nack() {
 fn info() {
     let disque = conn();
     disque.info().unwrap();
+}
+
+#[test]
+fn qlen() {
+    let disque = conn();
+    disque.addjob(b"queue10", b"job10", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    disque.addjob(b"queue10", b"job10", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    disque.addjob(b"queue10", b"job10", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    assert_eq!(disque.qlen(b"queue10").unwrap(), 3);
+    assert_eq!(disque.getjob_count(false, None, 100, true, &[b"queue10"]).unwrap().len(), 3);
 }
