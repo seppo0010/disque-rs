@@ -180,11 +180,49 @@ impl Disque {
         // Ok(v.into_iter().map(|x| (x[0], String::from_utf8(x[1]).unwrap(), x[2])).collect())
     }
 
+    pub fn getjob_count_withcounters(&self, nohang: bool, timeout: Option<Duration>,
+            count: usize, queues: &[&[u8]]
+            ) -> RedisResult<Vec<(Vec<u8>, String, Vec<u8>, u32, u32)>> {
+        let mut c = cmd("GETJOB");
+        if nohang { c.arg("NOHANG"); }
+        option_arg!(c, "TIMEOUT", timeout.map(|t| duration_to_millis(&t)));
+        c.arg("COUNT").arg(count);
+        c.arg("WITHCOUNTERS");
+        c.arg("FROM");
+        for queue in queues { c.arg(*queue); }
+        let v:Vec<Vec<Value>> = try!(c.query(&self.connection));
+        let mut r = vec![];
+        for mut x in v.into_iter() {
+            if x.len() != 7 {
+                return Err(RedisError::from((ErrorKind::TypeError,
+                                "Expected exactly three elements")));
+            }
+            let additional_deliveries:u32 = try!(u32::from_redis_value(&x.pop().unwrap()));
+            let _ = x.pop().unwrap();
+            let nack:u32 = try!(u32::from_redis_value(&x.pop().unwrap()));
+            let _ = x.pop().unwrap();
+            let job:Vec<u8> = try!(Vec::from_redis_value(&x.pop().unwrap()));
+            let jobid:String = try!(String::from_redis_value(&x.pop().unwrap()));
+            let queue:Vec<u8> = try!(Vec::from_redis_value(&x.pop().unwrap()));
+            r.push((queue, jobid, job, nack, additional_deliveries));
+        }
+        Ok(r)
+    }
+
     /// Gets a single job from any of the specified `queues`.
     pub fn getjob(&self, nohang: bool, timeout: Option<Duration>,
             queues: &[&[u8]]
             ) -> RedisResult<Option<(Vec<u8>, String, Vec<u8>)>> {
         let mut jobs = try!(self.getjob_count(nohang, timeout, 1, queues));
+        Ok(jobs.pop())
+    }
+
+    /// Gets a single job from any of the specified `queues` with its nack and
+    /// additional deliveries count.
+    pub fn getjob_withcounters(&self, nohang: bool, timeout: Option<Duration>,
+            queues: &[&[u8]]
+            ) -> RedisResult<Option<(Vec<u8>, String, Vec<u8>, u32, u32)>> {
+        let mut jobs = try!(self.getjob_count_withcounters(nohang, timeout, 1, queues));
         Ok(jobs.pop())
     }
 
@@ -347,6 +385,44 @@ fn getjob_count() {
     assert_eq!(jobs[1].0, b"queue2");
     assert_eq!(jobs[1].1, j2);
     assert_eq!(jobs[1].2, b"job2");
+}
+
+#[test]
+fn getjob_count_withcounters() {
+    let disque = conn();
+    let j1 = disque.addjob(b"queue18", b"job1", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    let j2 = disque.addjob(b"queue18", b"job2", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    assert_eq!(disque.getjob_count(false, None, 100, &[b"queue18"]).unwrap().len(), 2);
+    assert_eq!(disque.nack(&[j1.as_bytes(), j2.as_bytes()]).unwrap(), 2);
+    assert_eq!(disque.getjob_count(false, None, 100, &[b"queue18"]).unwrap().len(), 2);
+    assert_eq!(disque.nack(&[j1.as_bytes(), j2.as_bytes()]).unwrap(), 2);
+    assert_eq!(disque.getjob_count(false, None, 100, &[b"queue18"]).unwrap().len(), 2);
+    assert_eq!(disque.nack(&[j1.as_bytes()]).unwrap(), 1);
+    let jobs = disque.getjob_count_withcounters(false, None, 3, &[b"queue18"]).unwrap();
+    assert_eq!(jobs.len(), 1);
+    assert_eq!(jobs[0].0, b"queue18");
+    assert_eq!(jobs[0].1, j1);
+    assert_eq!(jobs[0].2, b"job1");
+    assert_eq!(jobs[0].3, 3);
+    assert_eq!(jobs[0].4, 0);
+}
+
+#[test]
+fn getjob_withcounters() {
+    let disque = conn();
+    let jobid = disque.addjob(b"queue19", b"job1", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    assert_eq!(disque.getjob_count(false, None, 100, &[b"queue19"]).unwrap().len(), 1);
+    assert_eq!(disque.nack(&[jobid.as_bytes()]).unwrap(), 1);
+    assert_eq!(disque.getjob_count(false, None, 100, &[b"queue19"]).unwrap().len(), 1);
+    assert_eq!(disque.nack(&[jobid.as_bytes()]).unwrap(), 1);
+    assert_eq!(disque.getjob_count(false, None, 100, &[b"queue19"]).unwrap().len(), 1);
+    assert_eq!(disque.nack(&[jobid.as_bytes()]).unwrap(), 1);
+    let job = disque.getjob_withcounters(false, None, &[b"queue19"]).unwrap().unwrap();
+    assert_eq!(job.0, b"queue19");
+    assert_eq!(job.1, jobid);
+    assert_eq!(job.2, b"job1");
+    assert_eq!(job.3, 3);
+    assert_eq!(job.4, 0);
 }
 
 #[test]
