@@ -70,6 +70,12 @@ impl Disque {
                     queues));
         Ok(jobs.pop())
     }
+
+    pub fn ackjob(&self, jobids: &[&[u8]]) -> Result<bool, RedisError> {
+        let mut c = cmd("ACKJOB");
+        for jobid in jobids { c.arg(*jobid); }
+        c.query(&self.connection)
+    }
 }
 
 #[cfg(test)]
@@ -121,4 +127,12 @@ fn getjob() {
     assert_eq!(job[0], b"queue4");
     assert_eq!(job[1], j1.into_bytes());
     assert_eq!(job[2], b"job4");
+}
+
+#[test]
+fn ackjob() {
+    let disque = conn();
+    let j1 = disque.addjob(b"queue6", b"job6", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    assert!(disque.ackjob(&[j1.as_bytes()]).unwrap());
+    assert!(!disque.ackjob(&[j1.as_bytes()]).unwrap());
 }
