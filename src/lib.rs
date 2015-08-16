@@ -227,7 +227,7 @@ impl Disque {
     }
 
     /// Acknowledge jobs.
-    pub fn ackjob(&self, jobids: &[&[u8]]) -> RedisResult<bool> {
+    pub fn ackjob(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
         let mut c = cmd("ACKJOB");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
@@ -439,10 +439,10 @@ fn getjob() {
 fn ackjob() {
     let disque = conn();
     let jobid = disque.addjob(b"queue6", b"job6", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
-    assert!(disque.ackjob(&[jobid.as_bytes()]).unwrap());
+    assert_eq!(disque.ackjob(&[jobid.as_bytes()]).unwrap(), 1);
     // FIXME: crashes disque-server, see https://github.com/antirez/disque/issues/113
-    // assert!(!disque.ackjob(&[jobid.as_bytes()]).unwrap());
-    // assert!(!disque.ackjob(&[jobid.as_bytes()]).unwrap());
+    // assert!(disque.ackjob(&[jobid.as_bytes()]).unwrap(), 0);
+    // assert!(disque.ackjob(&[jobid.as_bytes()]).unwrap(), 0);
 }
 
 #[test]
