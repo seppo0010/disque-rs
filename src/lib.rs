@@ -227,17 +227,27 @@ impl Disque {
     }
 
     /// Acknowledge jobs.
-    pub fn ackjob(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
+    pub fn ackjobs(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
         let mut c = cmd("ACKJOB");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
     }
 
+    /// Acknowledge a job.
+    pub fn ackjob(&self, jobid: &[u8]) -> RedisResult<bool> {
+        self.ackjobs(&[jobid]).map(|i| i == 1)
+    }
+
     /// Fast acknowledge jobs.
-    pub fn fastack(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
+    pub fn fastackjobs(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
         let mut c = cmd("FASTACK");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
+    }
+
+    /// Fast acknowledge a job.
+    pub fn fastackjob(&self, jobid: &[u8]) -> RedisResult<bool> {
+        self.fastackjobs(&[jobid]).map(|i| i == 1)
     }
 
     /// Tell Disque that a job is still processed.
@@ -246,13 +256,18 @@ impl Disque {
         Ok(Duration::from_secs(retry))
     }
 
-    /// Tells Disque to put back the job in the queue ASAP. Should be used when
+    /// Tells Disque to put back the jobs in the queue ASAP. Should be used when
     /// the worker was not able to process a message and wants the message to
     /// be put back into the queue in order to be processed again.
-    pub fn nack(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
+    pub fn nackjobs(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
         let mut c = cmd("NACK");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
+    }
+
+    /// Tells Disque to put back a job in the queue ASAP.
+    pub fn nackjob(&self, jobid: &[u8]) -> RedisResult<bool> {
+        self.nackjobs(&[jobid]).map(|i| i == 1)
     }
 
     /// Information about the server
@@ -272,7 +287,7 @@ impl Disque {
         cmd("QPEEK").arg(queue_name).arg(count).query(&self.connection)
     }
 
-    /// Queue jobs
+    /// Add jobs to queues
     pub fn enqueue(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
         let mut c = cmd("ENQUEUE");
         for jobid in jobids { c.arg(*jobid); }
@@ -286,11 +301,16 @@ impl Disque {
         c.query(&self.connection)
     }
 
-    /// Completely delete a job from a single node.
-    pub fn deljob(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
+    /// Completely delete jobs from a single node.
+    pub fn deljobs(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
         let mut c = cmd("DELJOB");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
+    }
+
+    /// Completely delete a job from a single node.
+    pub fn deljob(&self, jobid: &[u8]) -> RedisResult<bool> {
+        self.deljobs(&[jobid]).map(|i| i == 1)
     }
 
     /// Returns full information about a job, like its current state and data.
@@ -394,11 +414,11 @@ fn getjob_count_withcounters() {
     let j1 = disque.addjob(b"queue18", b"job1", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
     let j2 = disque.addjob(b"queue18", b"job2", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
     assert_eq!(disque.getjob_count(false, None, 100, &[b"queue18"]).unwrap().len(), 2);
-    assert_eq!(disque.nack(&[j1.as_bytes(), j2.as_bytes()]).unwrap(), 2);
+    assert_eq!(disque.nackjobs(&[j1.as_bytes(), j2.as_bytes()]).unwrap(), 2);
     assert_eq!(disque.getjob_count(false, None, 100, &[b"queue18"]).unwrap().len(), 2);
-    assert_eq!(disque.nack(&[j1.as_bytes(), j2.as_bytes()]).unwrap(), 2);
+    assert_eq!(disque.nackjobs(&[j1.as_bytes(), j2.as_bytes()]).unwrap(), 2);
     assert_eq!(disque.getjob_count(false, None, 100, &[b"queue18"]).unwrap().len(), 2);
-    assert_eq!(disque.nack(&[j1.as_bytes()]).unwrap(), 1);
+    assert_eq!(disque.nackjobs(&[j1.as_bytes()]).unwrap(), 1);
     let jobs = disque.getjob_count_withcounters(false, None, 3, &[b"queue18"]).unwrap();
     assert_eq!(jobs.len(), 1);
     assert_eq!(jobs[0].0, b"queue18");
@@ -413,11 +433,11 @@ fn getjob_withcounters() {
     let disque = conn();
     let jobid = disque.addjob(b"queue19", b"job1", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
     assert_eq!(disque.getjob_count(false, None, 100, &[b"queue19"]).unwrap().len(), 1);
-    assert_eq!(disque.nack(&[jobid.as_bytes()]).unwrap(), 1);
+    assert_eq!(disque.nackjobs(&[jobid.as_bytes()]).unwrap(), 1);
     assert_eq!(disque.getjob_count(false, None, 100, &[b"queue19"]).unwrap().len(), 1);
-    assert_eq!(disque.nack(&[jobid.as_bytes()]).unwrap(), 1);
+    assert_eq!(disque.nackjobs(&[jobid.as_bytes()]).unwrap(), 1);
     assert_eq!(disque.getjob_count(false, None, 100, &[b"queue19"]).unwrap().len(), 1);
-    assert_eq!(disque.nack(&[jobid.as_bytes()]).unwrap(), 1);
+    assert_eq!(disque.nackjobs(&[jobid.as_bytes()]).unwrap(), 1);
     let job = disque.getjob_withcounters(false, None, &[b"queue19"]).unwrap().unwrap();
     assert_eq!(job.0, b"queue19");
     assert_eq!(job.1, jobid);
@@ -437,22 +457,22 @@ fn getjob() {
 }
 
 #[test]
-fn ackjob() {
+fn ackjobs() {
     let disque = conn();
     let jobid = disque.addjob(b"queue6", b"job6", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
-    assert_eq!(disque.ackjob(&[jobid.as_bytes()]).unwrap(), 1);
+    assert_eq!(disque.ackjobs(&[jobid.as_bytes()]).unwrap(), 1);
     // FIXME: crashes disque-server, see https://github.com/antirez/disque/issues/113
-    // assert!(disque.ackjob(&[jobid.as_bytes()]).unwrap(), 0);
-    // assert!(disque.ackjob(&[jobid.as_bytes()]).unwrap(), 0);
+    // assert!(disque.ackjobs(&[jobid.as_bytes()]).unwrap(), 0);
+    // assert!(disque.ackjobs(&[jobid.as_bytes()]).unwrap(), 0);
 }
 
 #[test]
-fn fastack() {
+fn fastackjobs() {
     let disque = conn();
     let jobid = disque.addjob(b"queue7", b"job7", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
-    assert!(disque.fastack(&[jobid.as_bytes()]).unwrap() == 1);
-    assert!(disque.fastack(&[jobid.as_bytes()]).unwrap() == 0);
-    assert!(disque.fastack(&[jobid.as_bytes()]).unwrap() == 0);
+    assert!(disque.fastackjobs(&[jobid.as_bytes()]).unwrap() == 1);
+    assert!(disque.fastackjobs(&[jobid.as_bytes()]).unwrap() == 0);
+    assert!(disque.fastackjobs(&[jobid.as_bytes()]).unwrap() == 0);
 }
 
 #[test]
@@ -463,13 +483,13 @@ fn working() {
 }
 
 #[test]
-fn nack() {
+fn nackjobs() {
     let disque = conn();
     let j1 = disque.addjob(b"queue9", b"job9.1", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
     let j2 = disque.addjob(b"queue9", b"job9.2", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
     let j3 = disque.addjob(b"queue9", b"job9.3", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
     assert_eq!(disque.getjob_count(false, None, 100, &[b"queue9"]).unwrap().len(), 3);
-    assert_eq!(disque.nack(&[j1.as_bytes(), j2.as_bytes(), j3.as_bytes()]).unwrap(), 3);
+    assert_eq!(disque.nackjobs(&[j1.as_bytes(), j2.as_bytes(), j3.as_bytes()]).unwrap(), 3);
     assert_eq!(disque.getjob_count(false, None, 100, &[b"queue9"]).unwrap().len(), 3);
 }
 
@@ -544,12 +564,12 @@ fn dequeue() {
 }
 
 #[test]
-fn deljob() {
+fn deljobs() {
     let disque = conn();
     let j1 = disque.addjob(b"queue14", b"job14.1", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
     let j2 = disque.addjob(b"queue14", b"job14.2", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
     disque.addjob(b"queue14", b"job14.3", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
-    assert_eq!(disque.deljob(&[j1.as_bytes(), j2.as_bytes()]).unwrap(), 2);
+    assert_eq!(disque.deljobs(&[j1.as_bytes(), j2.as_bytes()]).unwrap(), 2);
     assert_eq!(disque.getjob_count(true, None, 100, &[b"queue14"]).unwrap().len(), 1);
 }
 
