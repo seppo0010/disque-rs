@@ -101,6 +101,10 @@ impl Disque {
     pub fn qlen(&self, queue_name: &[u8]) -> Result<usize, RedisError> {
         cmd("QLEN").arg(queue_name).query(&self.connection)
     }
+
+    pub fn qpeek(&self, queue_name: &[u8], count: i64) -> Result<Vec<Vec<Vec<u8>>>, RedisError> {
+        cmd("QPEEK").arg(queue_name).arg(count).query(&self.connection)
+    }
 }
 
 #[cfg(test)]
@@ -204,4 +208,36 @@ fn qlen() {
     disque.addjob(b"queue10", b"job10", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
     assert_eq!(disque.qlen(b"queue10").unwrap(), 3);
     assert_eq!(disque.getjob_count(false, None, 100, true, &[b"queue10"]).unwrap().len(), 3);
+}
+
+#[test]
+fn qpeek() {
+    let disque = conn();
+    let j1 = disque.addjob(b"queue11", b"job11.1", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    let j2 = disque.addjob(b"queue11", b"job11.2", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    assert_eq!(disque.qpeek(b"queue11", 10).unwrap(), vec![
+                vec![
+                b"queue11".to_vec(),
+                j1.as_bytes().to_vec(),
+                b"job11.1".to_vec(),
+                ],
+                vec![
+                b"queue11".to_vec(),
+                j2.as_bytes().to_vec(),
+                b"job11.2".to_vec(),
+                ],
+            ]);
+    assert_eq!(disque.qpeek(b"queue11", -10).unwrap(), vec![
+                vec![
+                b"queue11".to_vec(),
+                j2.as_bytes().to_vec(),
+                b"job11.2".to_vec(),
+                ],
+                vec![
+                b"queue11".to_vec(),
+                j1.as_bytes().to_vec(),
+                b"job11.1".to_vec(),
+                ],
+            ]);
+    assert_eq!(disque.getjob_count(false, None, 100, true, &[b"queue11"]).unwrap().len(), 2);
 }
