@@ -117,6 +117,12 @@ impl Disque {
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
     }
+
+    pub fn deljob(&self, jobids: &[&[u8]]) -> Result<usize, RedisError> {
+        let mut c = cmd("DELJOB");
+        for jobid in jobids { c.arg(*jobid); }
+        c.query(&self.connection)
+    }
 }
 
 #[cfg(test)]
@@ -273,4 +279,14 @@ fn dequeue() {
     let j3 = disque.addjob(b"queue13", b"job13.3", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
     assert_eq!(disque.dequeue(&[j1.as_bytes(), j2.as_bytes(), j3.as_bytes()]).unwrap(), 3);
     assert_eq!(disque.getjob_count(true, None, 100, true, &[b"queue13"]).unwrap().len(), 0);
+}
+
+#[test]
+fn deljob() {
+    let disque = conn();
+    let j1 = disque.addjob(b"queue14", b"job14.1", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    let j2 = disque.addjob(b"queue14", b"job14.2", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    disque.addjob(b"queue14", b"job14.3", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    assert_eq!(disque.deljob(&[j1.as_bytes(), j2.as_bytes()]).unwrap(), 2);
+    assert_eq!(disque.getjob_count(true, None, 100, true, &[b"queue14"]).unwrap().len(), 1);
 }
