@@ -33,7 +33,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use redis::{Connection, RedisError, cmd, Value, ErrorKind, FromRedisValue,
-    IntoConnectionInfo, Iter, RedisResult};
+    IntoConnectionInfo, Iter, RedisResult, InfoDict};
 
 fn duration_to_millis(d: &Duration) -> u64 {
     (d.subsec_nanos() / 1_000_000) as u64 + d.as_secs()
@@ -138,7 +138,7 @@ impl Disque {
         c.query(&self.connection)
     }
 
-    pub fn info(&self) -> RedisResult<Vec<u8>> {
+    pub fn info(&self) -> RedisResult<InfoDict> {
         cmd("INFO").query(&self.connection)
     }
 
@@ -308,7 +308,8 @@ fn nack() {
 #[test]
 fn info() {
     let disque = conn();
-    disque.info().unwrap();
+    let info = disque.info().unwrap();
+    let _:String = info.get("disque_version").unwrap();
 }
 
 #[test]
