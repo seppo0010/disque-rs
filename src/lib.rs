@@ -26,6 +26,11 @@
 //! ## Unix Sockets
 //!
 //! For unix socket support, install `redis` with the feature "unix_socket".
+//!
+//! ## Command reference
+//!
+//! The commands are a direct implementation of Disque commands. To read a
+//! reference about their meaning, go to https://github.com/antirez/disque
 
 extern crate redis;
 
@@ -53,12 +58,28 @@ pub struct Disque {
 }
 
 impl Disque {
+    /// Opens a new connection to a Disque server.
+    ///
+    /// # Examples
+    /// ```
+    /// # use disque::Disque;
+    /// let disque = Disque::open("redis://127.0.0.1:7711/").unwrap();
+    /// ```
     pub fn open<T: IntoConnectionInfo>(params: T) -> RedisResult<Disque> {
         let client = try!(redis::Client::open(params));
         let connection = try!(client.get_connection());
         Ok(Disque { connection: connection })
     }
 
+    /// The hello command returns information about the disque cluster.
+    ///
+    /// # Examples
+    /// ```
+    /// # use disque::Disque;
+    /// let disque = Disque::open("redis://127.0.0.1:7711/").unwrap();
+    /// let (_, nodeid, _) = disque.hello().unwrap();
+    /// println!("Connected to node {}", nodeid);
+    /// ```
     pub fn hello(&self) -> RedisResult<(u8, String, Vec<(String, String, u16, u32)>)> {
         let mut items = match try!(cmd("HELLO").query(&self.connection)) {
             Value::Bulk(items) => items,
@@ -75,6 +96,18 @@ impl Disque {
         Ok((hellov, nodeid, nodes))
     }
 
+    /// Adds a job to a queue.
+    ///
+    /// # Examples
+    /// ```
+    /// # use disque::Disque;
+    /// # use std::time::Duration;
+    /// let disque = Disque::open("redis://127.0.0.1:7711/").unwrap();
+    /// let jobid = disque.addjob(b"my queue", b"my job",
+    ///   Duration::from_secs(10), None, None, None, None, None, false
+    ///   ).unwrap();
+    /// println!("My job id is {}", jobid);
+    /// ```
     pub fn addjob(&self, queue_name: &[u8], job: &[u8], timeout: Duration,
             replicate: Option<usize>, delay: Option<Duration>,
             retry: Option<Duration>, ttl: Option<Duration>,
@@ -94,6 +127,26 @@ impl Disque {
         c.query(&self.connection)
     }
 
+    /// Gets up to `count` jobs from certain `queues`.
+    ///
+    /// # Examples
+    /// ```
+    /// # use disque::Disque;
+    /// # use std::time::Duration;
+    /// let disque = Disque::open("redis://127.0.0.1:7711/").unwrap();
+    /// let queue = b"my getjob_count queue";
+    /// disque.addjob(queue, b"my job 1", Duration::from_secs(10),
+    ///   None, None, None, None, None, false
+    ///   ).unwrap();
+    /// disque.addjob(queue, b"my job 2", Duration::from_secs(10),
+    ///   None, None, None, None, None, false
+    ///   ).unwrap();
+    ///
+    /// let jobs = disque.getjob_count(true, None, 10, false, &[queue]).unwrap();
+    /// assert_eq!(jobs.len(), 2);
+    /// assert_eq!(jobs[0][2], b"my job 1");
+    /// assert_eq!(jobs[1][2], b"my job 2");
+    /// ```
     pub fn getjob_count(&self, nohang: bool, timeout: Option<Duration>,
             count: usize, withcounters: bool, queues: &[&[u8]]
             ) -> RedisResult<Vec<Vec<Vec<u8>>>> {
@@ -107,6 +160,7 @@ impl Disque {
         c.query(&self.connection)
     }
 
+    /// Gets a single job from any of the specified `queues`.
     pub fn getjob(&self, nohang: bool, timeout: Option<Duration>,
             withcounters: bool, queues: &[&[u8]]
             ) -> RedisResult<Option<Vec<Vec<u8>>>> {
@@ -115,60 +169,74 @@ impl Disque {
         Ok(jobs.pop())
     }
 
+    /// Acknowledge jobs.
     pub fn ackjob(&self, jobids: &[&[u8]]) -> RedisResult<bool> {
         let mut c = cmd("ACKJOB");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
     }
 
+    /// Fast acknowledge jobs.
     pub fn fastack(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
         let mut c = cmd("FASTACK");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
     }
 
+    /// Tell Disque that a job is still processed.
     pub fn working(&self, jobid: &[u8]) -> RedisResult<Duration> {
         let retry = try!(cmd("WORKING").arg(jobid).query(&self.connection));
         Ok(Duration::from_secs(retry))
     }
 
+    /// Tells Disque to put back the job in the queue ASAP. Should be used when
+    /// the worker was not able to process a message and wants the message to
+    /// be put back into the queue in order to be processed again.
     pub fn nack(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
         let mut c = cmd("NACK");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
     }
 
+    /// Information about the server
     pub fn info(&self) -> RedisResult<InfoDict> {
         cmd("INFO").query(&self.connection)
     }
 
+    /// Size of the queue
     pub fn qlen(&self, queue_name: &[u8]) -> RedisResult<usize> {
         cmd("QLEN").arg(queue_name).query(&self.connection)
     }
 
+    /// Gets jobs from `queue_name` up to the absolute number of `count`.
+    /// If count is negative, it will be from newest to oldest.
     pub fn qpeek(&self, queue_name: &[u8], count: i64
             ) -> RedisResult<Vec<Vec<Vec<u8>>>> {
         cmd("QPEEK").arg(queue_name).arg(count).query(&self.connection)
     }
 
+    /// Queue jobs
     pub fn enqueue(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
         let mut c = cmd("ENQUEUE");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
     }
 
+    /// Remove jobs from queue
     pub fn dequeue(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
         let mut c = cmd("DEQUEUE");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
     }
 
+    /// Completely delete a job from a single node.
     pub fn deljob(&self, jobids: &[&[u8]]) -> RedisResult<usize> {
         let mut c = cmd("DELJOB");
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
     }
 
+    /// Returns full information about a job, like its current state and data.
     pub fn show(&self, jobid: &[u8]) -> RedisResult<HashMap<String, Value>> {
         let info:Value = try!(cmd("SHOW").arg(jobid).query(&self.connection));
         let mut h = HashMap::new();
@@ -189,6 +257,8 @@ impl Disque {
         Ok(h)
     }
 
+    /// Iterator to run all queues that fulfil a criteria.
+    /// The iterator will batch into segments of approximate `count` size.
     pub fn qscan(&self, cursor: u64, count: u64, busyloop: bool,
             minlen: Option<u64>, maxlen: Option<u64>, importrate: Option<u64>
             ) -> RedisResult<Iter<Vec<u8>>> {
@@ -201,6 +271,8 @@ impl Disque {
         c.cursor_arg(cursor).iter(&self.connection)
     }
 
+    /// Iterator to run all jobs that fulfil a criteria.
+    /// The iterator will batch into segments of approximate `count` size.
     pub fn jscan_id(&self, cursor: u64, count: u64, blocking: bool,
             queue: Option<&[u8]>, states: &[&str]
             ) -> RedisResult<Iter<String>> {
