@@ -82,6 +82,11 @@ impl Disque {
         for jobid in jobids { c.arg(*jobid); }
         c.query(&self.connection)
     }
+
+    pub fn working(&self, jobid: &[u8]) -> Result<Duration, RedisError> {
+        let retry = try!(cmd("WORKING").arg(jobid).query(&self.connection));
+        Ok(Duration::from_secs(retry))
+    }
 }
 
 #[cfg(test)]
@@ -151,4 +156,11 @@ fn fastack() {
     assert!(disque.fastack(&[jobid.as_bytes()]).unwrap());
     assert!(!disque.fastack(&[jobid.as_bytes()]).unwrap());
     assert!(!disque.fastack(&[jobid.as_bytes()]).unwrap());
+}
+
+#[test]
+fn working() {
+    let disque = conn();
+    let jobid = disque.addjob(b"queue8", b"job8", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    assert!(disque.working(jobid.as_bytes()).unwrap().as_secs() > 0);
 }
