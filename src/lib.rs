@@ -62,6 +62,14 @@ impl Disque {
         for queue in queues { c.arg(*queue); }
         c.query(&self.connection)
     }
+
+    pub fn getjob(&self, nohang: bool, timeout: Option<Duration>,
+            withcounters: bool, queues: &[&[u8]]
+            ) -> Result<Option<Vec<Vec<u8>>>, RedisError> {
+        let mut jobs = try!(self.getjob_count(nohang, timeout, 1, withcounters,
+                    queues));
+        Ok(jobs.pop())
+    }
 }
 
 #[cfg(test)]
@@ -103,4 +111,14 @@ fn getjob_count() {
     assert_eq!(jobs[1][0], b"queue2");
     assert_eq!(jobs[1][1], j2.into_bytes());
     assert_eq!(jobs[1][2], b"job2");
+}
+
+#[test]
+fn getjob() {
+    let disque = conn();
+    let j1 = disque.addjob(b"queue4", b"job4", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+    let job = disque.getjob(false, None, true, &[b"queue4", b"queue5"]).unwrap().unwrap();
+    assert_eq!(job[0], b"queue4");
+    assert_eq!(job[1], j1.into_bytes());
+    assert_eq!(job[2], b"job4");
 }
