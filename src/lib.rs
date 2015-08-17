@@ -89,11 +89,24 @@ impl Disque {
             _ => return Err(RedisError::from((ErrorKind::TypeError,
                             "Expected multi-bulk"))),
         };
-        if items.len() != 3 {
+        if items.len() < 3 {
             return Err(RedisError::from((ErrorKind::TypeError,
-                            "Expected multi-bulk with size 3")));
+                            "Expected multi-bulk with size at least 3")));
         }
-        let nodes = try!(Vec::from_redis_value(&items.pop().unwrap()));
+        let mut nodes = vec![];
+        for _ in 2..items.len() {
+            let node:Vec<Value> = try!(Vec::from_redis_value(&items.pop().unwrap()));
+            if node.len() != 4 {
+                return Err(RedisError::from((ErrorKind::TypeError,
+                                "Expected multi-bulk with size 4")));
+            }
+            nodes.push((
+                        try!(String::from_redis_value(&node[0])),
+                        try!(String::from_redis_value(&node[1])),
+                        try!(u16::from_redis_value(&node[2])),
+                        try!(u32::from_redis_value(&node[3])),
+                       ));
+        }
         let nodeid = try!(String::from_redis_value(&items.pop().unwrap()));
         let hellov = try!(u8::from_redis_value(&items.pop().unwrap()));
         Ok((hellov, nodeid, nodes))
