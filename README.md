@@ -9,7 +9,7 @@ The crate is called `disque` and you can depend on it via cargo:
 
 ```toml
 [dependencies]
-disque = "0.1.0"
+disque = "0.2.0"
 ```
 
 It currently requires Rust Beta or Nightly.
