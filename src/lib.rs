@@ -328,24 +328,7 @@ impl Disque {
 
     /// Returns full information about a job, like its current state and data.
     pub fn show(&self, jobid: &[u8]) -> RedisResult<Option<HashMap<String, Value>>> {
-        let info:Value = try!(cmd("SHOW").arg(jobid).query(&self.connection));
-        let mut h = HashMap::new();
-        let mut items = match info {
-            Value::Bulk(items) => items,
-            Value::Nil => return Ok(None),
-            _ => return Err(RedisError::from((ErrorKind::TypeError,
-                            "Expected multi-bulk"))),
-        };
-        if items.len() % 2 != 0 {
-            return Err(RedisError::from((ErrorKind::TypeError,
-                            "Expected an even number of elements")));
-        }
-        while items.len() > 0 {
-            let value = items.pop().unwrap();
-            let key:String = try!(String::from_redis_value(&items.pop().unwrap()));
-            h.insert(key, value);
-        }
-        Ok(Some(h))
+        cmd("SHOW").arg(jobid).query(&self.connection)
     }
 
     /// Iterator to run all queues that fulfil a criteria.
@@ -362,7 +345,7 @@ impl Disque {
         c.cursor_arg(cursor).iter(&self.connection)
     }
 
-    /// Iterator to run all jobs that fulfil a criteria.
+    /// Iterator for all job ids that fulfil a criteria.
     /// The iterator will batch into segments of approximate `count` size.
     pub fn jscan_id(&self, cursor: u64, count: u64, blocking: bool,
             queue: Option<&[u8]>, states: &[&str]
@@ -374,6 +357,23 @@ impl Disque {
         for state in states {
             c.arg("STATE").arg(*state);
         }
+        c.cursor_arg(cursor).iter(&self.connection)
+    }
+
+
+    /// Iterator for all jobs that fulfil a criteria.
+    /// The iterator will batch into segments of approximate `count` size.
+    pub fn jscan_all(&self, cursor: u64, count: u64, blocking: bool,
+            queue: Option<&[u8]>, states: &[&str]
+            ) -> RedisResult<Iter<HashMap<String, Value>>> {
+        let mut c = cmd("JSCAN");
+        c.arg("COUNT").arg(count);
+        if blocking { c.arg("BLOCKING"); }
+        option_arg!(c, "QUEUE", queue);
+        for state in states {
+            c.arg("STATE").arg(*state);
+        }
+        c.arg("REPLY").arg("all");
         c.cursor_arg(cursor).iter(&self.connection)
     }
 }
@@ -611,4 +611,22 @@ fn jscan_id() {
     assert!(disque.jscan_id(0, 1000, false, None, &[]).unwrap().collect::<Vec<_>>().contains(&job));
     assert!(!disque.jscan_id(0, 1000, false, Some(b"queue16"), &[]).unwrap().collect::<Vec<_>>().contains(&job));
     assert!(disque.jscan_id(0, 1000, false, Some(b"queue17"), &[]).unwrap().collect::<Vec<_>>().contains(&job));
+}
+
+#[test]
+fn jscan_all() {
+    let disque = conn();
+    let job = disque.addjob(b"queue20", b"job20", Duration::from_secs(10), None, None, None, None, None, false).unwrap();
+
+    assert!(disque.jscan_all(0, 1000, false, None, &[]).unwrap().into_iter().map(|mut x| {
+        String::from_redis_value(&x.remove("id").unwrap()).unwrap()
+    }).collect::<Vec<_>>().contains(&job));
+
+    assert!(!disque.jscan_all(0, 1000, false, Some(b"queue16"), &[]).unwrap().into_iter().map(|mut x| {
+        String::from_redis_value(&x.remove("id").unwrap()).unwrap()
+    }).collect::<Vec<_>>().contains(&job));
+
+    assert!(disque.jscan_all(0, 1000, false, Some(b"queue20"), &[]).unwrap().into_iter().map(|mut x| {
+        String::from_redis_value(&x.remove("id").unwrap()).unwrap()
+    }).collect::<Vec<_>>().contains(&job));
 }
