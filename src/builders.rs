@@ -1,7 +1,8 @@
+use std::collections::HashMap;
 use std::time::Duration;
 
 use disque::Disque;
-use redis::{RedisResult, Iter};
+use redis::{RedisResult, Iter, Value};
 
 /// Helper to add a new job
 ///
@@ -217,4 +218,80 @@ fn queue_query_builder() {
     assert_eq!(qqb.minlen, Some(1));
     assert_eq!(qqb.maxlen, Some(10));
     assert_eq!(qqb.importrate, Some(5));
+}
+
+/// Helper to get a list of jobs
+///
+/// # Examples
+///
+/// ```
+/// # use disque::Disque;
+/// # use disque::JobQueryBuilder;
+///
+/// let disque = Disque::open("redis://127.0.0.1:7711/").unwrap();
+/// let jobs = JobQueryBuilder::new().queue(b"my queue").state("queued")
+///     .iter_ids(&disque).unwrap().collect::<Vec<_>>();
+/// assert!(jobs.len() >= 0);
+/// ```
+pub struct JobQueryBuilder<'a> {
+    count: u64,
+    blocking: bool,
+    queue: Option<&'a [u8]>,
+    states: Vec<&'a str>,
+}
+
+impl<'a> JobQueryBuilder<'a> {
+    pub fn new() -> JobQueryBuilder<'a> {
+        JobQueryBuilder {
+            count: 16,
+            blocking: false,
+            queue: None,
+            states: vec![],
+        }
+    }
+
+    pub fn count(&mut self, count: u64) -> &mut Self {
+        self.count = count; self
+    }
+
+    pub fn blocking(&mut self, blocking: bool) -> &mut Self {
+        self.blocking = blocking; self
+    }
+
+    pub fn queue(&mut self, queue: &'a [u8]) -> &mut Self {
+        self.queue = Some(queue); self
+    }
+
+    pub fn state(&mut self, state: &'a str) -> &mut Self {
+        self.states.push(state); self
+    }
+
+    /// Gets a job ids iterator.
+    pub fn iter_ids<'b>(&'b self, disque: &'b Disque
+            ) -> RedisResult<Iter<String>> {
+        disque.jscan_id(0, self.count, self.blocking, self.queue,
+                &*self.states)
+    }
+
+    /// Gets a job information iterator.
+    pub fn iter_all<'b>(&'b self, disque: &'b Disque
+            ) -> RedisResult<Iter<HashMap<String, Value>>> {
+        disque.jscan_all(0, self.count, self.blocking, self.queue,
+                &*self.states)
+    }
+}
+
+#[test]
+fn job_query_builder() {
+    let mut jqb = JobQueryBuilder::new();
+    assert_eq!(jqb.count, 16);
+    assert_eq!(jqb.blocking, false);
+    assert_eq!(jqb.queue, None);
+    assert_eq!(jqb.states.len(), 0);
+    jqb.count(20).blocking(true).queue(b"jqb queue").state("state1"
+            ).state("state2");
+    assert_eq!(jqb.count, 20);
+    assert_eq!(jqb.blocking, true);
+    assert_eq!(jqb.queue, Some(b"jqb queue" as &[u8]));
+    assert_eq!(jqb.states, vec!["state1", "state2"]);
 }
