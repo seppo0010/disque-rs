@@ -308,12 +308,12 @@ impl Disque {
 
     /// Iterator for all job ids that fulfil a criteria.
     /// The iterator will batch into segments of approximate `count` size.
-    pub fn jscan_id(&self, cursor: u64, count: u64, blocking: bool,
+    pub fn jscan_id(&self, cursor: u64, count: u64, busyloop: bool,
             queue: Option<&[u8]>, states: &[&str]
             ) -> RedisResult<Iter<String>> {
         let mut c = cmd("JSCAN");
         c.arg("COUNT").arg(count);
-        if blocking { c.arg("BLOCKING"); }
+        if busyloop { c.arg("BUSYLOOP"); }
         option_arg!(c, "QUEUE", queue);
         for state in states {
             c.arg("STATE").arg(*state);
@@ -324,12 +324,12 @@ impl Disque {
 
     /// Iterator for all jobs that fulfil a criteria.
     /// The iterator will batch into segments of approximate `count` size.
-    pub fn jscan_all(&self, cursor: u64, count: u64, blocking: bool,
+    pub fn jscan_all(&self, cursor: u64, count: u64, busyloop: bool,
             queue: Option<&[u8]>, states: &[&str]
             ) -> RedisResult<Iter<HashMap<String, Value>>> {
         let mut c = cmd("JSCAN");
         c.arg("COUNT").arg(count);
-        if blocking { c.arg("BLOCKING"); }
+        if busyloop { c.arg("BUSYLOOP"); }
         option_arg!(c, "QUEUE", queue);
         for state in states {
             c.arg("STATE").arg(*state);
