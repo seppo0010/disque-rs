@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use disque::Disque;
-use redis::RedisResult;
+use redis::{RedisResult, Iter};
 
 /// Helper to add a new job
 ///
@@ -135,4 +135,86 @@ fn add_job_builder() {
     assert_eq!(jb.ttl, Some(Duration::from_secs(6)));
     assert_eq!(jb.maxlen, Some(7));
     assert_eq!(jb.async, true);
+}
+
+/// Helper to get a list of queues
+///
+/// # Examples
+///
+/// ```
+/// # use disque::Disque;
+/// # use disque::QueueQueryBuilder;
+///
+/// let disque = Disque::open("redis://127.0.0.1:7711/").unwrap();
+/// let queues = QueueQueryBuilder::new().busyloop(true).minlen(50)
+///     .iter(&disque).unwrap().collect::<Vec<_>>();
+/// assert!(queues.len() >= 0);
+/// ```
+pub struct QueueQueryBuilder {
+    count: u64,
+    busyloop: bool,
+    minlen: Option<u64>,
+    maxlen: Option<u64>,
+    importrate: Option<u64>,
+}
+
+impl QueueQueryBuilder {
+    /// Creates a new builder.
+    pub fn new() -> QueueQueryBuilder {
+        QueueQueryBuilder {
+            count: 16,
+            busyloop: false,
+            minlen: None,
+            maxlen: None,
+            importrate: None,
+        }
+    }
+
+    /// A hint about how much work to do per iteration.
+    pub fn count(&mut self, count: u64) -> &mut Self {
+        self.count = count; self
+    }
+
+    /// If true, blocks and returns all the queues in a busy loop.
+    pub fn busyloop(&mut self, busyloop: bool) -> &mut Self {
+        self.busyloop = busyloop; self
+    }
+
+    /// Only return queues with at least `minlen` jobs.
+    pub fn minlen(&mut self, minlen: u64) -> &mut Self {
+        self.minlen = Some(minlen); self
+    }
+
+    /// Only return queues with at most `maxlen` jobs.
+    pub fn maxlen(&mut self, maxlen: u64) -> &mut Self {
+        self.maxlen = Some(maxlen); self
+    }
+
+    /// Only return queues with a job import rate (from other nodes) greater
+    /// than or equal to  `importrate`.
+    pub fn importrate(&mut self, importrate: u64) -> &mut Self {
+        self.importrate = Some(importrate); self
+    }
+
+    /// Gets the queue iterator.
+    pub fn iter<'a>(&'a self, disque: &'a Disque) -> RedisResult<Iter<Vec<u8>>> {
+        disque.qscan(0, self.count, self.busyloop, self.minlen, self.maxlen,
+                self.importrate)
+    }
+}
+
+#[test]
+fn queue_query_builder() {
+    let mut qqb = QueueQueryBuilder::new();
+    assert_eq!(qqb.count, 16);
+    assert_eq!(qqb.busyloop, false);
+    assert_eq!(qqb.minlen, None);
+    assert_eq!(qqb.maxlen, None);
+    assert_eq!(qqb.importrate, None);
+    qqb.count(11).busyloop(true).minlen(1).maxlen(10).importrate(5);
+    assert_eq!(qqb.count, 11);
+    assert_eq!(qqb.busyloop, true);
+    assert_eq!(qqb.minlen, Some(1));
+    assert_eq!(qqb.maxlen, Some(10));
+    assert_eq!(qqb.importrate, Some(5));
 }
