@@ -10,4 +10,4 @@ keywords = [ "disque", "message", "broker", "scheduling", "distributed" ]
 license-file = "LICENSE"
 
 [dependencies]
-redis = "0.5.0"
+redis = "0.5.4"
