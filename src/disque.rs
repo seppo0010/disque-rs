@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use redis::{Connection, RedisError, cmd, Value, ErrorKind, FromRedisValue,
+use redis::{Connection, RedisError, cmd, Value, ErrorKind,
     IntoConnectionInfo, Iter, RedisResult, InfoDict, Client};
+
+pub use redis::FromRedisValue;
 
 fn duration_to_millis(d: &Duration) -> u64 {
     (d.subsec_nanos() / 1_000_000) as u64 + d.as_secs()
@@ -336,6 +338,9 @@ impl Disque {
         }
         c.arg("REPLY").arg("all");
         c.cursor_arg(cursor).iter(&self.connection)
+    }
+    pub fn qstat(&self, queue_name: &[u8]) -> RedisResult<HashMap<String, Value>> {
+        cmd("QSTAT").arg(queue_name).query(&self.connection)
     }
 }
 
