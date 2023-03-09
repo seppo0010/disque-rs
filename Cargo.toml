@@ -1,6 +1,6 @@
 [package]
 name = "disque"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["Sebastian Waisbrot <seppo0010@gmail.com>"]
 description = "A client library for Disque message broker"
 documentation = "http://seppo0010.github.io/disque-rs/"
